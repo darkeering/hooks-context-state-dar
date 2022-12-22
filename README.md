@@ -1,46 +1,114 @@
-# Getting Started with Create React App
+# 使用方法
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+1. 在全局或者需要使用 `service` 的地方使用 `createServiceProvider` 方法生成组件
 
-## Available Scripts
+   ```typescript
+   export default createServiceProvider(Home, [ManageService, UserService]);
 
-In the project directory, you can run:
+   function Home() {
+     const manageService = useServiceHook(ManageService);
+     const [manageId, setmanageId] = useState(manageService.manageId);
 
-### `yarn start`
+     useEffect(() => {
+       const subscription = manageService.manageId$.subscribe((manageId) => {
+         setmanageId(manageId);
+       });
+       return () => {
+         subscription.unsubscribe();
+       };
+     }, []);
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+     const addManageId = () => {
+       manageService.setManageId(manageId + 1);
+     };
+     return (
+       <div>
+         <div>
+           <span>I am manage, manageId: {manageId}</span>{" "}
+           <button onClick={addManageId}>add manageId</button>
+         </div>
+         <User></User>
+         <User></User>
+       </div>
+     );
+   }
+   ```
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+2. 就可以在此执行上下文里面使用该 service 的实例
 
-### `yarn test`
+   ```typescript
+   export default createServiceProvider(User, [UserService]);
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+   function User() {
+     const manageService = useServiceHook(ManageService);
+     const userService = useServiceHook(UserService);
+     const [manageId, setmanageId] = useState(manageService.manageId);
+     const [name, setname] = useState(userService.name);
+     const [age, setage] = useState(userService.age);
+     useEffect(() => {
+       const subscriptions: Subscription[] = [];
+       subscriptions.push(
+         manageService.manageId$.subscribe((manageId) => {
+           setmanageId(manageId);
+         })
+       );
+       subscriptions.push(
+         userService.age$.subscribe((age) => {
+           setage(age);
+         })
+       );
+       return () => {
+         subscriptions.forEach((i) => i.unsubscribe());
+       };
+     }, []);
 
-### `yarn build`
+     const addAge = () => {
+       userService.setAge(age + 1);
+     };
+     return (
+       <div>
+         <span>
+           I am user: {name}, my age is {age}, my manager manageId is {manageId}
+         </span>{" "}
+         <button onClick={addAge}>add age</button>
+       </div>
+     );
+   }
+   ```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+3. 如果在子组件中又使用 **createServiceProvider** 方法创建了与父组件同名的 **service**, 那么子组件修改的数据不会影响其父组件中的 **service** 实例中数据
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+   ```typescript
+   // Home Component
+   export default createServiceProvider(Home, [ManageService, UserService]);
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+   function Home() {
+     ...
+     return (
+       <div>
+         <div>
+           <span>I am manage, manageId: {manageId}</span>{" "}
+           <button onClick={addManageId}>add manageId</button>
+         </div>
+         <User></User>
+         <User></User>
+       </div>
+     );
+   }
 
-### `yarn eject`
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+   // User Component
+   export default createServiceProvider(User, [UserService]);
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+   function User() {
+     ...
+     return (
+       <div>
+         <span>
+           I am user: {name}, my age is {age}, my manager manageId is {manageId}
+         </span>{" "}
+         <button onClick={addAge}>add age</button>
+       </div>
+     );
+   }
+   ```
